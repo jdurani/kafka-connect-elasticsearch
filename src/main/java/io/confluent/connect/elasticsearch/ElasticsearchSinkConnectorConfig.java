@@ -139,9 +139,9 @@ public class ElasticsearchSinkConnectorConfig extends AbstractConfig {
       + " mapping conflict or a field name containing illegal characters. Valid options are "
       + "'ignore', 'warn', and 'fail'.";
   public static final String USE_UPDATE_CONFIG = "use.update";
-  private static final String USE_UPDATE_DOC = "Whether to use UPDATE (UPSERT) instead of INSERT method. "
-      + "This allows documents to be updated rather than overwritten (e.g. new fields added). "
-      + "Valid options are 'true', 'false'. Default to 'false'.";
+  private static final String USE_UPDATE_DOC = "Whether to use UPDATE (UPSERT) instead of "
+      + "INSERT method. This allows documents to be updated rather than overwritten "
+      + "(e.g. new fields added). Valid options are 'true', 'false'. Default to 'false'.";
 
   protected static ConfigDef baseConfigDef() {
     final ConfigDef configDef = new ConfigDef();
