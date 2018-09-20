@@ -40,6 +40,7 @@ import io.searchbox.core.Delete;
 import io.searchbox.core.Index;
 import io.searchbox.core.Search;
 import io.searchbox.core.SearchResult;
+import io.searchbox.core.Update;
 import io.searchbox.indices.CreateIndex;
 import io.searchbox.indices.IndicesExists;
 import io.searchbox.indices.mapping.GetMapping;
@@ -70,6 +71,7 @@ public class JestElasticsearchClient implements ElasticsearchClient {
 
   private final JestClient client;
   private final Version version;
+  private boolean useUpdate = false;
 
   // visible for testing
   public JestElasticsearchClient(JestClient client) {
@@ -126,6 +128,7 @@ public class JestElasticsearchClient implements ElasticsearchClient {
       );
       this.client = factory.getObject();
       this.version = getServerVersion();
+      this.useUpdate = config.getBoolean(ElasticsearchSinkConnectorConfig.USE_UPDATE_CONFIG);
     } catch (IOException e) {
       throw new ConnectException(
           "Couldn't start ElasticsearchSinkTask due to connection error:",
@@ -257,7 +260,9 @@ public class JestElasticsearchClient implements ElasticsearchClient {
   // visible for testing
   protected BulkableAction toBulkableAction(IndexableRecord record) {
     // If payload is null, the record was a tombstone and we should delete from the index.
-    return record.payload != null ? toIndexRequest(record) : toDeleteRequest(record);
+    return record.payload != null
+            ? (useUpdate ? toUpdateRequest(record) : toIndexRequest(record))
+            : toDeleteRequest(record);
   }
 
   private Delete toDeleteRequest(IndexableRecord record) {
@@ -278,6 +283,15 @@ public class JestElasticsearchClient implements ElasticsearchClient {
       req.setParameter("version_type", "external").setParameter("version", record.version);
     }
     return req.build();
+  }
+
+  private Update toUpdateRequest(IndexableRecord record) {
+    String payload = "{\"doc\":" + record.payload + ", \"doc_as_upsert\":true}";
+    return new Update.Builder(payload)
+        .index(record.key.index)
+        .type(record.key.type)
+        .id(record.key.id)
+        .build();
   }
 
   public BulkResponse executeBulk(BulkRequest bulk) throws IOException {
